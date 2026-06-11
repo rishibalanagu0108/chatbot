@@ -11,8 +11,10 @@ export default function App() {
   // ========================================================================
 
   // messages: array of all messages in the conversation
-  // Each message has: { id, text, sender ('user' or 'ai'), timestamp }
+  // Each message has: { id, text, sender ('user' or 'ai'), timestamp, isError }
+  // Keep max 100 messages to prevent memory issues
   const [messages, setMessages] = useState([])
+  const MAX_MESSAGES = 100
 
   // inputValue: current text being typed in the input field
   const [inputValue, setInputValue] = useState('')
@@ -97,6 +99,18 @@ export default function App() {
       return
     }
 
+    // Validation: check message length
+    if (trimmedInput.length > 5000) {
+      alert('Message is too long! Maximum 5000 characters.')
+      return
+    }
+
+    // Validation: check if we've hit message limit
+    if (messages.length >= MAX_MESSAGES) {
+      alert(`Maximum ${MAX_MESSAGES} messages reached. Refresh to start a new conversation.`)
+      return
+    }
+
     // Add user message to the message list
     const userMessage = {
       id: generateId(),
@@ -133,20 +147,42 @@ export default function App() {
 
       // Check if the response was successful
       if (response.ok && data.success) {
-        // Create an AI message from the response
-        const aiMessage = {
-          id: generateId(),
-          text: data.response,
-          sender: 'ai',
-          timestamp: getTimestamp()
+        // Validate that the AI response is not empty
+        if (!data.response || data.response.trim().length === 0) {
+          const emptyMessage = {
+            id: generateId(),
+            text: '⚠️ AI returned an empty response. Please try again with a different question.',
+            sender: 'ai',
+            timestamp: getTimestamp(),
+            isError: true
+          }
+          setMessages(prev => [...prev, emptyMessage])
+        } else {
+          // Create an AI message from the response
+          const aiMessage = {
+            id: generateId(),
+            text: data.response,
+            sender: 'ai',
+            timestamp: getTimestamp()
+          }
+          // Add AI message to the messages list
+          setMessages(prev => [...prev, aiMessage])
         }
-        // Add AI message to the messages list
-        setMessages(prev => [...prev, aiMessage])
       } else {
         // Handle error response from backend
+        let errorText = data.response || 'Failed to get response from AI.'
+        // Add helpful context based on the HTTP status
+        if (response.status === 429) {
+          errorText = '⚠️ Rate limit reached. Please wait a moment and try again.'
+        } else if (response.status === 500) {
+          errorText = '⚠️ Server error. Please make sure the backend is running and try again.'
+        } else if (response.status === 400) {
+          errorText = '⚠️ Invalid request. Please check your message and try again.'
+        }
+
         const errorMessage = {
           id: generateId(),
-          text: data.response || 'Failed to get response. Please try again.',
+          text: errorText,
           sender: 'ai',
           timestamp: getTimestamp(),
           isError: true
@@ -155,9 +191,20 @@ export default function App() {
       }
     } catch (error) {
       // Handle network or parsing errors
+      let errorText = ''
+
+      // Provide specific error messages based on error type
+      if (error.message.includes('Failed to fetch')) {
+        errorText = `❌ Cannot connect to backend. Make sure the server is running on ${import.meta.env.VITE_API_URL}`
+      } else if (error.message.includes('JSON')) {
+        errorText = '❌ Invalid response from server. Backend may be down.'
+      } else {
+        errorText = `❌ Error: ${error.message}`
+      }
+
       const errorMessage = {
         id: generateId(),
-        text: `Error: ${error.message}. Make sure the backend is running on ${import.meta.env.VITE_API_URL}`,
+        text: errorText,
         sender: 'ai',
         timestamp: getTimestamp(),
         isError: true
@@ -172,6 +219,18 @@ export default function App() {
   // Handle input field changes
   const handleInputChange = (e) => {
     setInputValue(e.target.value)
+  }
+
+  // Handle keyboard events in the input field
+  const handleKeyDown = (e) => {
+    // Send message on Enter, but allow Shift+Enter for new lines
+    if (e.key === 'Enter' && !e.shiftKey) {
+      // Prevent default behavior (adding newline)
+      e.preventDefault()
+      // Send the message
+      handleSendMessage(e)
+    }
+    // If Shift+Enter is pressed, allow default behavior (add newline)
   }
 
   // ========================================================================
@@ -214,14 +273,18 @@ export default function App() {
               height: '100%',
               flexDirection: 'column',
               color: 'var(--text-tertiary)',
-              textAlign: 'center'
+              textAlign: 'center',
+              padding: '20px'
             }}>
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}>💬</div>
-              <p style={{ fontSize: '16px', marginBottom: '8px', fontWeight: '500' }}>
-                No messages yet
+              <div style={{ fontSize: '56px', marginBottom: '16px' }}>🤖</div>
+              <p style={{ fontSize: '18px', marginBottom: '12px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                Welcome to AI Chat
               </p>
-              <p style={{ fontSize: '14px' }}>
-                Start a conversation by typing a message below
+              <p style={{ fontSize: '14px', marginBottom: '20px', maxWidth: '300px', lineHeight: '1.6' }}>
+                Powered by Google Gemini. Start a conversation by typing a message below. Type anything you'd like to know!
+              </p>
+              <p style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>
+                💡 Tip: Press Enter to send, or Shift+Enter for new line
               </p>
             </div>
           )}
@@ -268,7 +331,8 @@ export default function App() {
               className="input-field"
               value={inputValue}
               onChange={handleInputChange}
-              placeholder="Type your message here... (Press Enter to send)"
+              onKeyDown={handleKeyDown}
+              placeholder="Type your message... (Enter to send, Shift+Enter for new line)"
               disabled={isLoading}
               rows="1"
               style={{
@@ -281,6 +345,7 @@ export default function App() {
                 e.target.style.height = 'auto'
                 e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'
               }}
+              aria-label="Message input field"
             />
             {/* Character count indicator */}
             <div className="char-count">
