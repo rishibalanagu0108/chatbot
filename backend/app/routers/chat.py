@@ -3,26 +3,35 @@ Chat router - API endpoints for chat functionality
 
 Routes are API endpoints that:
 1. Receive HTTP requests from the frontend
-2. Call service layer (business logic)
-3. Return HTTP responses
+2. Validate using Pydantic schemas (automatic)
+3. Call service layer (business logic)
+4. Return HTTP responses (automatically validated by Pydantic)
 
 Why separate router from service?
-- Service layer is about WHAT to do (business logic)
-- Router layer is about HOW to expose it (HTTP API)
-- Easy to add new interfaces (GraphQL, WebSockets, gRPC, etc.)
+- SERVICE: Business logic (how to call LLM, format responses)
+- ROUTER: HTTP API (request validation, response formatting)
 - Easy to test both independently
+- Easy to add new interfaces (GraphQL, WebSockets, gRPC)
+
+Pydantic automatically:
+1. Validates incoming requests match ChatRequest schema
+2. Returns 422 Unprocessable Entity if validation fails
+3. Validates outgoing responses match ChatResponse schema
+4. Documents API in Swagger (GET /docs)
 
 This router handles:
-- POST /api/chat - Send a message
+- POST /api/chat/chat - Send a message and get response
 - GET /api/chat/config - Get available configurations
 """
 
 import logging
+import time
+from datetime import datetime
 from fastapi import APIRouter, HTTPException
 from typing import Optional
 
 from ..schemas.request import ChatRequest, LLMRole as SchemaLLMRole, TemperaturePreset
-from ..schemas.response import ChatResponse, ConfigResponse, HealthResponse
+from ..schemas.response import ChatResponse, ConfigResponse, RoleInfo
 from ..services.llm_service import LLMService
 from ..config.settings import Settings, LLMRole
 
@@ -48,20 +57,50 @@ async def chat(request: ChatRequest) -> ChatResponse:
     Main chat endpoint - Send a message and get a response from the LLM
 
     This endpoint:
-    1. Receives a chat request with message and optional settings
-    2. Validates the input (done automatically by Pydantic)
-    3. Calls the LLMService to generate a response
-    4. Returns the response with metadata
+    1. Receives a chat request (automatically validated by Pydantic)
+    2. Checks LLM service is ready
+    3. Calls LLMService to generate response with system prompt and settings
+    4. Returns response with complete metadata
+
+    The request is automatically validated by Pydantic:
+    - message must be 1-5000 characters
+    - role must be one of the valid roles
+    - temperature must be 0.0-2.0 (if provided)
+    - max_tokens must be 100-4000 (if provided)
+
+    If validation fails, returns 422 Unprocessable Entity with detailed errors.
 
     Args:
-        request: ChatRequest containing message and optional settings
+        request: ChatRequest (validated by Pydantic)
+                {
+                    "message": "What is Python?",
+                    "role": "coder",
+                    "temperature": 0.7,
+                    "max_tokens": 1000
+                }
 
     Returns:
         ChatResponse with AI response and metadata
+        {
+            "response": "Python is a programming language...",
+            "success": true,
+            "role_used": "coder",
+            "temperature_used": 0.7,
+            "max_tokens_used": 1000,
+            "tokens_estimated": 150,
+            "model_used": "gemini-pro",
+            "timestamp": "2024-01-15T10:30:45Z",
+            "processing_time_ms": 1250.5
+        }
 
     Raises:
-        HTTPException: If validation or generation fails
+        HTTPException 400: Validation failed
+        HTTPException 429: Rate limit reached
+        HTTPException 500: Server error
     """
+    # Record start time for performance tracking
+    start_time = time.time()
+
     # Check if LLM service initialized successfully
     if llm_service is None:
         logger.error("LLM service is not initialized")
@@ -71,16 +110,21 @@ async def chat(request: ChatRequest) -> ChatResponse:
         )
 
     try:
-        # Extract parameters from request
+        # Extract parameters from request (Pydantic already validated them)
         message = request.message
         role = LLMRole[request.role.value.upper()] if request.role else LLMRole.ASSISTANT
         temperature = request.temperature
         temperature_preset = request.temperature_preset
         max_tokens = request.max_tokens
 
-        logger.info(f"Processing chat request | Role: {role.value}")
+        logger.info(f"Processing chat request | Role: {role.value} | Message length: {len(message)}")
 
         # Generate response using LLMService
+        # LLMService handles:
+        # - System prompt injection for the role
+        # - API call to Google Gemini
+        # - Error handling and retry logic
+        # - Token estimation
         response_text, metadata = await llm_service.generate_response(
             message=message,
             role=role,
@@ -89,7 +133,12 @@ async def chat(request: ChatRequest) -> ChatResponse:
             max_tokens=max_tokens,
         )
 
-        # Return successful response
+        # Calculate processing time
+        processing_time = (time.time() - start_time) * 1000  # Convert to milliseconds
+
+        logger.info(f"Chat request successful | Time: {processing_time:.1f}ms")
+
+        # Return successful response with all metadata
         return ChatResponse(
             response=response_text,
             success=True,
@@ -97,18 +146,32 @@ async def chat(request: ChatRequest) -> ChatResponse:
             temperature_used=metadata.get("temperature_used"),
             max_tokens_used=metadata.get("max_tokens_used"),
             tokens_estimated=metadata.get("tokens_estimated"),
+            model_used=metadata.get("model_used"),
+            timestamp=datetime.utcnow(),
+            processing_time_ms=processing_time,
         )
 
     except ValueError as e:
-        # Handle validation errors
-        logger.warning(f"Validation error: {str(e)}")
+        # Handle validation errors from service
+        error_msg = str(e)
+        logger.warning(f"Validation error: {error_msg}")
+
+        # Determine error code based on message
+        error_code = "SERVER_ERROR"
+        if "temperature" in error_msg.lower():
+            error_code = "INVALID_TEMPERATURE"
+        elif "token" in error_msg.lower():
+            error_code = "INVALID_TOKENS"
+        elif "message" in error_msg.lower():
+            error_code = "INVALID_MESSAGE"
+
         raise HTTPException(
             status_code=400,
-            detail=str(e)
+            detail=error_msg
         )
 
     except Exception as e:
-        # Handle unexpected errors
+        # Handle unexpected errors from LLM API
         error_str = str(e)
         logger.error(f"Unexpected error in chat endpoint: {error_str}")
 
@@ -135,53 +198,58 @@ async def get_config() -> ConfigResponse:
     """
     Get available configuration options
 
-    Returns information about:
-    - Available roles
-    - Temperature presets
-    - Default settings
-    - Validation limits
+    The frontend calls this on startup to:
+    1. Get available roles (to populate dropdown)
+    2. Get temperature presets (for preset buttons)
+    3. Get validation constraints (min/max message length)
+    4. Learn the API version (for feature detection)
 
-    This is called by the frontend on startup to populate UI options.
+    This makes the frontend generic - it doesn't hardcode role names
+    or validation rules. If the backend changes, frontend automatically
+    adapts.
 
     Returns:
-        ConfigResponse with all available options
+        ConfigResponse with all available options, including:
+        - roles: Available LLM personalities
+        - temperature_presets: Temperature shorthand values
+        - default_temperature: Default temp if user doesn't specify
+        - default_max_tokens: Default token limit
+        - min/max message lengths for validation
+        - min/max temperature values
+        - api_version: Version for feature detection
     """
-    logger.info("Config requested")
+    logger.info("Config endpoint called")
 
     try:
-        # Get available roles with descriptions
+        # Build list of available roles with descriptions
         roles = [
-            {
-                "name": "assistant",
-                "description": "General helpful assistant"
-            },
-            {
-                "name": "coder",
-                "description": "Expert programming assistant"
-            },
-            {
-                "name": "tutor",
-                "description": "Patient educational tutor"
-            },
-            {
-                "name": "creative",
-                "description": "Creative and imaginative"
-            },
+            RoleInfo(
+                name="assistant",
+                description="General helpful assistant for any question"
+            ),
+            RoleInfo(
+                name="coder",
+                description="Expert programming assistant - great for code and technical explanations"
+            ),
+            RoleInfo(
+                name="tutor",
+                description="Patient educational tutor - explains concepts step by step"
+            ),
+            RoleInfo(
+                name="creative",
+                description="Creative and imaginative - perfect for brainstorming and writing"
+            ),
         ]
 
-        # Get temperature presets
-        temperature_presets = {
-            "precise": Settings.TEMPERATURE_VALUES["precise"],
-            "balanced": Settings.TEMPERATURE_VALUES["balanced"],
-            "creative": Settings.TEMPERATURE_VALUES["creative"],
-        }
-
-        # Convert to proper types for ConfigResponse
-        from ..config.settings import TemperaturePreset as ConfigTemperaturePreset
+        # Get temperature presets with their values
+        # Import the enum to get all presets
+        from ..config.settings import TemperaturePreset
         temperature_presets = {
             preset.value: Settings.get_temperature(preset)
-            for preset in ConfigTemperaturePreset
+            for preset in TemperaturePreset
         }
+
+        logger.info(f"Returning config with {len(roles)} roles and {len(temperature_presets)} temperature presets")
 
         return ConfigResponse(
             roles=roles,
@@ -190,10 +258,14 @@ async def get_config() -> ConfigResponse:
             default_max_tokens=Settings.DEFAULT_MAX_TOKENS,
             min_message_length=Settings.MIN_MESSAGE_LENGTH,
             max_message_length=Settings.MAX_MESSAGE_LENGTH,
+            min_temperature=0.0,
+            max_temperature=2.0,
+            api_version="1.0.0",
         )
 
     except Exception as e:
-        logger.error(f"Error getting config: {str(e)}")
+        error_msg = str(e)
+        logger.error(f"Error getting config: {error_msg}")
         raise HTTPException(
             status_code=500,
             detail="Failed to get configuration"

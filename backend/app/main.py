@@ -13,6 +13,7 @@ Think of this as the "conductor" that orchestrates all the pieces of the applica
 """
 
 import logging
+from datetime import datetime
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -105,16 +106,16 @@ async def health_check():
     """
     Health check endpoint
 
-    Used to verify that the server is running and healthy.
-    Returns a simple status message.
+    Used by monitoring tools and load balancers to verify server is running.
 
     Returns:
-        HealthResponse with status and message
+        HealthResponse with status "ok" if healthy
     """
     logger.info("Health check called")
     return HealthResponse(
         status="ok",
-        message="Server is running and healthy"
+        message="Server is running and healthy",
+        timestamp=datetime.utcnow()
     )
 
 

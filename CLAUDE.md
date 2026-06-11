@@ -307,7 +307,94 @@ Validation automatically:
 
 ---
 
-### 6. Error Handling Strategy
+### 6. Pydantic Validation (Type Safety)
+**What**: Validates data before it reaches business logic
+
+**Why**:
+- **Security**: Prevents injection attacks, malformed requests
+- **Fail Fast**: Catches errors before expensive processing
+- **Clear Errors**: Provides detailed validation messages
+- **Auto-docs**: Generates OpenAPI documentation automatically
+
+**How it Works**:
+```python
+class ChatRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=5000)
+    temperature: Optional[float] = Field(ge=0.0, le=2.0)
+```
+
+When user sends:
+```json
+{
+  "message": "",
+  "temperature": 3.0
+}
+```
+
+Pydantic automatically:
+1. Checks message is 1-5000 characters → **FAILS** (empty)
+2. Returns 422 Unprocessable Entity
+3. Includes detailed error: "String should have at least 1 character"
+4. Never reaches business logic
+
+When user sends valid data:
+1. All checks pass
+2. Python object created automatically
+3. Reaches business logic with guaranteed valid data
+
+**In Code** (`schemas/request.py`):
+```python
+class ChatRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=5000)
+    role: LLMRole = Field(default=LLMRole.ASSISTANT)
+    temperature: Optional[float] = Field(ge=0.0, le=2.0)
+
+    @field_validator('message')
+    @classmethod
+    def validate_message(cls, v: str) -> str:
+        # Custom validation for complex logic
+        if v.strip() == "":
+            raise ValueError("Cannot be whitespace only")
+        return v.strip()
+```
+
+**Result**: Invalid requests rejected before reaching service layer.
+
+---
+
+### 7. Enums (Type-Safe Choices)
+**What**: Define a fixed set of allowed values
+
+**Why**:
+- **Prevents typos**: Can only use valid values
+- **IDE support**: IDE autocomplete shows all options
+- **Documentation**: Swagger shows all valid choices
+- **Type checking**: Errors if you use wrong value
+
+**Example**:
+```python
+class LLMRole(str, Enum):
+    ASSISTANT = "assistant"
+    CODER = "coder"
+    TUTOR = "tutor"
+    CREATIVE = "creative"
+```
+
+**Benefits**:
+```python
+# ✅ Good: IDE knows valid values
+role = LLMRole.CODER
+
+# ❌ Bad: Typo, caught at definition time
+role = LLMRole.CODEE  # AttributeError immediately
+
+# ❌ Bad: Typo in string, caught at request time
+{"role": "codee"}  # Returns 422 error with hint
+```
+
+---
+
+### 8. Error Handling Strategy
 **Pattern**: Catch specific errors, provide meaningful responses
 
 **In Code** (`llm_service.py`):
