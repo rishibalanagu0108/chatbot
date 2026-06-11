@@ -24,6 +24,8 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 # os: Allows us to read environment variables (like API key)
 import os
+# google.generativeai: SDK for Google's Gemini AI API
+import google.generativeai as genai
 
 # ============================================================================
 # CONFIGURATION
@@ -32,6 +34,18 @@ import os
 # Load environment variables from .env file
 # This reads GOOGLE_API_KEY and other settings from .env
 load_dotenv()
+
+# Get the Google API key from environment variables
+# This should be set in your .env file as GOOGLE_API_KEY=your_key_here
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+
+# Configure the google.generativeai library with your API key
+# This tells the SDK which account to use for API requests
+genai.configure(api_key=GOOGLE_API_KEY)
+
+# Initialize the Gemini model we'll use for chat
+# "gemini-pro" is Google's general-purpose model for text generation
+model = genai.GenerativeModel("gemini-pro")
 
 # Create a FastAPI application instance
 # This is the core of our web server
@@ -140,15 +154,33 @@ async def chat(request: ChatRequest):
     # Extract the message from the request
     user_message = request.message
 
-    # For now, just echo the message back (we'll add Gemini API in Stage 3)
-    # This is a placeholder response for testing
-    ai_response = f"You said: {user_message} (This is a placeholder response)"
+    # Try to get a response from Google Gemini API
+    # We wrap this in a try-except to handle any errors gracefully
+    try:
+        # Call the Gemini model with the user's message
+        # generate_content() is the main method to get AI responses
+        response = model.generate_content(user_message)
+        print(response)
 
-    # Return the response in the expected format
-    return ChatResponse(
-        response=ai_response,
-        success=True
-    )
+        # Extract the text from the response
+        # response.text contains the actual AI-generated response
+        ai_response = response.text
+
+        # Return the response in the expected format
+        return ChatResponse(
+            response=ai_response,
+            success=True
+        )
+
+    # If something goes wrong (API error, invalid key, etc), catch it here
+    except Exception as e:
+        # Return an error message to the frontend
+        # This helps with debugging and tells the user something went wrong
+        error_message = f"Error: {str(e)}"
+        return ChatResponse(
+            response=error_message,
+            success=False
+        )
 
 
 # ============================================================================
