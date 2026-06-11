@@ -1,0 +1,199 @@
+"""
+AI Chat Application - FastAPI Backend
+Stage 2: Basic Server Setup with Health Check
+
+This is the main FastAPI server that will:
+1. Handle requests from the React frontend
+2. Call the Google Gemini API
+3. Return responses to the frontend
+
+Every line is commented to explain exactly what it does.
+"""
+
+# ============================================================================
+# IMPORTS - These bring in libraries we need
+# ============================================================================
+
+# FastAPI: A modern, fast Python web framework for building APIs
+from fastapi import FastAPI
+# CORSMiddleware: Allows requests from different domains (React frontend)
+from fastapi.middleware.cors import CORSMiddleware
+# BaseModel: Used to define the structure of data we receive from frontend
+from pydantic import BaseModel
+# load_dotenv: Loads environment variables from .env file
+from dotenv import load_dotenv
+# os: Allows us to read environment variables (like API key)
+import os
+
+# ============================================================================
+# CONFIGURATION
+# ============================================================================
+
+# Load environment variables from .env file
+# This reads GOOGLE_API_KEY and other settings from .env
+load_dotenv()
+
+# Create a FastAPI application instance
+# This is the core of our web server
+app = FastAPI(
+    title="AI Chat API",  # Name of the API
+    description="Simple chat API that integrates with Google Gemini",  # Description
+    version="0.0.1"  # Version number
+)
+
+# ============================================================================
+# CORS CONFIGURATION
+# Add CORS middleware to allow requests from React frontend
+# ============================================================================
+
+# Define which origins (domains) can access our API
+allowed_origins = [
+    "http://localhost:3000",      # Standard React dev port (if using CRA)
+    "http://localhost:5173",      # Vite dev server port (we're using this)
+    "http://127.0.0.1:5173",      # Alternative localhost
+    "http://localhost:8000",      # For testing from same machine
+]
+
+# Add CORS middleware to the FastAPI app
+# This tells the server to accept requests from the allowed_origins
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,  # Which domains can access this API
+    allow_credentials=True,          # Allow cookies and auth
+    allow_methods=["*"],             # Allow all HTTP methods (GET, POST, etc)
+    allow_headers=["*"],             # Allow all headers
+)
+
+# ============================================================================
+# DATA MODELS - Define the structure of data we expect/send
+# ============================================================================
+
+# This defines what data we expect to receive from the frontend
+class ChatRequest(BaseModel):
+    """
+    Structure of the chat message request from frontend
+
+    Example:
+    {
+        "message": "Hello, how are you?"
+    }
+    """
+    # The user's message text
+    message: str
+
+
+# This defines what data we'll send back to the frontend
+class ChatResponse(BaseModel):
+    """
+    Structure of the chat response we send back to frontend
+
+    Example:
+    {
+        "response": "I'm doing well, thank you for asking!",
+        "success": true
+    }
+    """
+    # The AI's response text
+    response: str
+    # Whether the request was successful
+    success: bool
+
+
+# ============================================================================
+# ROUTES - Define the API endpoints
+# ============================================================================
+
+# Health check endpoint - simple endpoint to verify server is running
+@app.get("/health")
+async def health_check():
+    """
+    Health check endpoint - called to verify the server is running
+
+    This endpoint doesn't require any data. Just visit http://localhost:8000/health
+    in your browser and you should see {"status": "ok"}
+
+    Returns:
+        dict: A simple status message
+    """
+    # Return a simple JSON response indicating the server is healthy
+    return {"status": "ok", "message": "Server is running"}
+
+
+# Chat endpoint - the main endpoint that will handle messages
+@app.post("/api/chat")
+async def chat(request: ChatRequest):
+    """
+    Main chat endpoint - receives a message and returns a response
+
+    This endpoint will:
+    1. Receive a message from the frontend
+    2. Send it to Google Gemini API
+    3. Return the response
+
+    Args:
+        request (ChatRequest): Contains the user's message
+
+    Returns:
+        ChatResponse: Contains the AI's response
+    """
+
+    # Extract the message from the request
+    user_message = request.message
+
+    # For now, just echo the message back (we'll add Gemini API in Stage 3)
+    # This is a placeholder response for testing
+    ai_response = f"You said: {user_message} (This is a placeholder response)"
+
+    # Return the response in the expected format
+    return ChatResponse(
+        response=ai_response,
+        success=True
+    )
+
+
+# ============================================================================
+# ERROR HANDLING - What happens if something goes wrong
+# ============================================================================
+
+@app.get("/")
+async def root():
+    """
+    Root endpoint - what appears when you visit http://localhost:8000/
+
+    This is just informational - tells users how to use the API
+    """
+    return {
+        "message": "Welcome to AI Chat API",
+        "endpoints": {
+            "health": "GET /health - Check if server is running",
+            "chat": "POST /api/chat - Send a message",
+            "docs": "GET /docs - Interactive API documentation"
+        }
+    }
+
+
+# ============================================================================
+# MAIN - This runs when we execute this script
+# ============================================================================
+
+if __name__ == "__main__":
+    """
+    This code only runs when we execute this file directly
+    (not when it's imported by another file)
+
+    It starts the FastAPI server using Uvicorn ASGI server
+    """
+
+    # Import uvicorn for running the server
+    import uvicorn
+
+    # Start the server
+    # host="0.0.0.0" means the server listens on all network interfaces
+    # port=8000 means the server runs on http://localhost:8000
+    # reload=True means the server restarts when we change code (good for development)
+    uvicorn.run(
+        "main:app",  # Run the 'app' FastAPI instance from this file
+        host="0.0.0.0",  # Listen on all network interfaces
+        port=8000,  # Use port 8000
+        reload=True  # Auto-reload when code changes
+    )
