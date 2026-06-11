@@ -1,0 +1,14 @@
+# FastAPI web framework
+fastapi==0.104.1
+
+# ASGI server to run FastAPI
+uvicorn==0.24.0
+
+# Environment variable management
+python-dotenv==1.0.0
+
+# Google Generative AI (Gemini) SDK
+google-generativeai==0.3.0
+
+# CORS support for cross-origin requests
+python-multipart==0.0.6
