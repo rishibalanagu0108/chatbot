@@ -1,11 +1,13 @@
 """
 AI Chat Application - FastAPI Backend
-Stage 2: Basic Server Setup with Health Check
+Stage 4: Error Handling & Input Validation
 
 This is the main FastAPI server that will:
 1. Handle requests from the React frontend
 2. Call the Google Gemini API
 3. Return responses to the frontend
+4. Validate all inputs
+5. Handle errors gracefully with proper HTTP status codes
 
 Every line is commented to explain exactly what it does.
 """
@@ -15,21 +17,31 @@ Every line is commented to explain exactly what it does.
 # ============================================================================
 
 # FastAPI: A modern, fast Python web framework for building APIs
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 # CORSMiddleware: Allows requests from different domains (React frontend)
 from fastapi.middleware.cors import CORSMiddleware
 # BaseModel: Used to define the structure of data we receive from frontend
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 # load_dotenv: Loads environment variables from .env file
 from dotenv import load_dotenv
 # os: Allows us to read environment variables (like API key)
 import os
+# logging: For recording important events and debugging
+import logging
 # google.generativeai: SDK for Google's Gemini AI API
 import google.generativeai as genai
 
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
+
+# Set up logging to track important events and errors
+# This helps us debug issues and understand what's happening
+logging.basicConfig(
+    level=logging.INFO,  # Log info level and higher (info, warning, error, critical)
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"  # Format includes timestamp, name, level, message
+)
+logger = logging.getLogger(__name__)  # Create a logger for this module
 
 # Load environment variables from .env file
 # This reads GOOGLE_API_KEY and other settings from .env
@@ -120,7 +132,13 @@ class ChatRequest(BaseModel):
     }
     """
     # The user's message text
-    message: str
+    # min_length=1 means the message must have at least 1 character
+    # max_length=5000 means the message cannot be longer than 5000 characters
+    message: str = Field(
+        min_length=1,
+        max_length=5000,
+        description="The user's message to send to the AI"
+    )
 
 
 # This defines what data we'll send back to the frontend
@@ -178,20 +196,38 @@ async def chat(request: ChatRequest):
         ChatResponse: Contains the AI's response
     """
 
-    # Extract the message from the request
-    user_message = request.message
+    # Extract and log the message
+    user_message = request.message.strip()  # Remove leading/trailing whitespace
+    logger.info(f"Received message from user: {user_message[:100]}...")  # Log first 100 chars
+
+    # Validate the message isn't just whitespace after stripping
+    if not user_message:
+        logger.warning("User sent empty or whitespace-only message")
+        raise HTTPException(
+            status_code=400,  # 400 = Bad Request
+            detail="Message cannot be empty or just whitespace"
+        )
 
     # Try to get a response from Google Gemini API
-    # We wrap this in a try-except to handle any errors gracefully
+    # We wrap this in a try-except to handle specific error types
     try:
         # Call the Gemini model with the user's message
         # generate_content() is the main method to get AI responses
+        logger.info("Sending message to Gemini API...")
         response = model.generate_content(user_message)
-        print(response)
+
+        # Check if the response has content
+        if not response or not response.text:
+            logger.warning("Gemini API returned empty response")
+            raise HTTPException(
+                status_code=500,  # 500 = Internal Server Error
+                detail="AI model returned an empty response. Please try again."
+            )
 
         # Extract the text from the response
         # response.text contains the actual AI-generated response
         ai_response = response.text
+        logger.info("Successfully received response from Gemini API")
 
         # Return the response in the expected format
         return ChatResponse(
@@ -199,14 +235,38 @@ async def chat(request: ChatRequest):
             success=True
         )
 
-    # If something goes wrong (API error, invalid key, etc), catch it here
+    # Handle specific API authentication errors
+    except ValueError as e:
+        # ValueError usually means invalid API key or configuration
+        logger.error(f"API Configuration error: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail="API configuration error. Check your API key."
+        )
+
+    # Handle rate limiting or quota errors
     except Exception as e:
-        # Return an error message to the frontend
-        # This helps with debugging and tells the user something went wrong
-        error_message = f"Error: {str(e)}"
-        return ChatResponse(
-            response=error_message,
-            success=False
+        error_str = str(e)
+        logger.error(f"Gemini API error: {error_str}")
+
+        # Check if it's a rate limit error
+        if "429" in error_str or "quota" in error_str.lower():
+            raise HTTPException(
+                status_code=429,  # 429 = Too Many Requests
+                detail="API rate limit reached. Please try again in a moment."
+            )
+
+        # Check if it's a model availability error
+        if "not found" in error_str.lower() or "not supported" in error_str.lower():
+            raise HTTPException(
+                status_code=500,
+                detail="AI model is not available. Please try again later."
+            )
+
+        # Generic error handler for any other API errors
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get response from AI: {error_str[:100]}"
         )
 
 
