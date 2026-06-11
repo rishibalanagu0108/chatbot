@@ -18,6 +18,7 @@ When a response doesn't match schema:
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
+from enum import Enum
 
 
 class ChatResponse(BaseModel):
@@ -108,10 +109,22 @@ class ChatResponse(BaseModel):
     )
     """Processing time in milliseconds (useful for monitoring)"""
 
+    formatted_blocks: Optional[List[FormattedBlock]] = Field(
+        default=None,
+        description="Response parsed into formatted blocks for rich rendering"
+    )
+    """Formatted blocks for frontend rendering (paragraphs, code, headings, etc.)"""
+
+    formatting_metadata: Optional[ResponseMetadata] = Field(
+        default=None,
+        description="Metadata about the formatted response (has_code, code_languages, etc.)"
+    )
+    """Metadata about formatting (code languages, block count, etc.)"""
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "response": "Python is a high-level programming language known for readability...",
+                "response": "Python is a high-level programming language. Here's a simple example:\n\n```python\ndef hello():\n    print('world')\n```\n\nKey features:\n- Easy to learn\n- Readable syntax",
                 "success": True,
                 "role_used": "coder",
                 "temperature_used": 0.7,
@@ -119,7 +132,32 @@ class ChatResponse(BaseModel):
                 "tokens_estimated": 150,
                 "model_used": "gemini-pro",
                 "timestamp": "2024-01-15T10:30:45Z",
-                "processing_time_ms": 1250.5
+                "processing_time_ms": 1250.5,
+                "formatted_blocks": [
+                    {
+                        "type": "paragraph",
+                        "content": "Python is a high-level programming language. Here's a simple example:",
+                        "metadata": None
+                    },
+                    {
+                        "type": "code",
+                        "content": "def hello():\n    print('world')",
+                        "metadata": {"language": "python"}
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": "Key features:",
+                        "metadata": None
+                    }
+                ],
+                "formatting_metadata": {
+                    "has_code": True,
+                    "code_languages": ["python"],
+                    "has_markdown": True,
+                    "block_count": 3,
+                    "code_block_count": 1,
+                    "character_count": 180
+                }
             }
         }
     )
@@ -129,6 +167,58 @@ class ChatResponse(BaseModel):
     def allow_none(cls, v):
         """Allow None values"""
         return v
+
+
+class BlockType(str, Enum):
+    """Types of content blocks in formatted response"""
+    PARAGRAPH = "paragraph"
+    CODE = "code"
+    HEADING = "heading"
+    LIST = "list"
+    QUOTE = "quote"
+    BOLD = "bold"
+    ITALIC = "italic"
+    LINK = "link"
+    TABLE = "table"
+
+
+class FormattedBlock(BaseModel):
+    """
+    A single formatted block of content
+
+    The LLM returns plain text. This schema represents it
+    as structured blocks for rich rendering on frontend.
+
+    Example:
+    {
+        "type": "code",
+        "content": "def hello():\n    print('world')",
+        "metadata": {"language": "python"}
+    }
+    """
+
+    type: BlockType = Field(description="Type of content block")
+    """Type of this block (paragraph, code, heading, etc.)"""
+
+    content: str = Field(description="The actual content/text of this block")
+    """The content of this block"""
+
+    metadata: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Additional metadata (language for code, level for heading, etc.)"
+    )
+    """Optional metadata (e.g., language for code blocks)"""
+
+
+class ResponseMetadata(BaseModel):
+    """Metadata about the formatted response"""
+
+    has_code: bool = Field(description="Whether response contains code blocks")
+    code_languages: List[str] = Field(description="Programming languages found in code blocks")
+    has_markdown: bool = Field(description="Whether response contains markdown syntax")
+    block_count: int = Field(description="Number of formatted blocks")
+    code_block_count: int = Field(description="Number of code blocks")
+    character_count: int = Field(description="Total characters in response")
 
 
 class RoleInfo(BaseModel):

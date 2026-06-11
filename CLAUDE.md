@@ -417,6 +417,47 @@ except Exception as e:
 
 ---
 
+## Response Formatting (Backend)
+
+### FormatterService
+The backend now includes a `FormatterService` that transforms plain text LLM responses into beautifully structured data:
+
+**What it does**:
+1. Detects markdown syntax (code blocks, headings, lists, quotes)
+2. Identifies code blocks and detects programming languages
+3. Parses response into structured blocks
+4. Provides metadata about the response
+
+**How it works**:
+```python
+formatter = FormatterService()
+result = formatter.format_response("Python is great!\n\n```python\nprint('hello')\n```")
+
+# Returns:
+{
+    "raw_text": "...",
+    "formatted_blocks": [
+        {"type": "paragraph", "content": "Python is great!"},
+        {"type": "code", "content": "print('hello')", "metadata": {"language": "python"}}
+    ],
+    "metadata": {
+        "has_code": True,
+        "code_languages": ["python"],
+        "has_markdown": True,
+        "block_count": 2,
+        "code_block_count": 1
+    }
+}
+```
+
+**Frontend uses this to**:
+- Render code blocks with syntax highlighting
+- Show different styling for headings, lists, quotes
+- Detect code languages for proper highlighting
+- Track what content types are in the response
+
+---
+
 ## Running the Application
 
 ### Backend

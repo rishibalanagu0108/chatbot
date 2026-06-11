@@ -179,7 +179,7 @@ class LLMService:
 
             # Prepare metadata about this response
             metadata = {
-                "role_used": role.value,x
+                "role_used": role.value,
                 "temperature_used": final_temperature,
                 "max_tokens_used": final_max_tokens,
                 "tokens_estimated": estimated_tokens,

@@ -31,8 +31,9 @@ from fastapi import APIRouter, HTTPException
 from typing import Optional
 
 from ..schemas.request import ChatRequest, LLMRole as SchemaLLMRole, TemperaturePreset
-from ..schemas.response import ChatResponse, ConfigResponse, RoleInfo
+from ..schemas.response import ChatResponse, ConfigResponse, RoleInfo, FormattedBlock
 from ..services.llm_service import LLMService
+from ..services.formatter_service import FormatterService
 from ..config.settings import Settings, LLMRole
 
 logger = logging.getLogger(__name__)
@@ -41,14 +42,16 @@ logger = logging.getLogger(__name__)
 # router is a FastAPI feature that groups related endpoints
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
-# Initialize the LLM service
-# This is a global instance that will be used by all request handlers
+# Initialize services
+# These are global instances used by all request handlers
 try:
     llm_service = LLMService()
-    logger.info("LLMService initialized successfully")
+    formatter_service = FormatterService()
+    logger.info("LLMService and FormatterService initialized successfully")
 except Exception as e:
-    logger.error(f"Failed to initialize LLMService: {str(e)}")
+    logger.error(f"Failed to initialize services: {str(e)}")
     llm_service = None
+    formatter_service = None
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -138,6 +141,31 @@ async def chat(request: ChatRequest) -> ChatResponse:
 
         logger.info(f"Chat request successful | Time: {processing_time:.1f}ms")
 
+        # Format the response for beautiful frontend display
+        formatted_result = None
+        formatting_metadata = None
+
+        if formatter_service:
+            try:
+                formatted_result = formatter_service.format_response(response_text)
+                # Convert formatted blocks to schema objects
+                formatted_blocks = [
+                    FormattedBlock(**block) for block in formatted_result["formatted_blocks"]
+                ]
+                formatting_metadata = formatted_result["metadata"]
+                logger.info(
+                    f"Response formatted | "
+                    f"Blocks: {formatted_result['metadata']['block_count']} | "
+                    f"Has code: {formatted_result['metadata']['has_code']}"
+                )
+            except Exception as e:
+                logger.warning(f"Failed to format response: {str(e)}, returning unformatted")
+                formatted_blocks = None
+                formatting_metadata = None
+        else:
+            formatted_blocks = None
+            formatting_metadata = None
+
         # Return successful response with all metadata
         return ChatResponse(
             response=response_text,
@@ -149,6 +177,8 @@ async def chat(request: ChatRequest) -> ChatResponse:
             model_used=metadata.get("model_used"),
             timestamp=datetime.utcnow(),
             processing_time_ms=processing_time,
+            formatted_blocks=formatted_blocks,
+            formatting_metadata=formatting_metadata,
         )
 
     except ValueError as e:
