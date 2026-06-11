@@ -15,6 +15,7 @@ When a response doesn't match schema:
 - Developer sees validation error in logs
 """
 
+from __future__ import annotations
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
@@ -109,7 +110,7 @@ class ChatResponse(BaseModel):
     )
     """Processing time in milliseconds (useful for monitoring)"""
 
-    formatted_blocks: Optional[List[FormattedBlock]] = Field(
+    formatted_blocks: Optional[List["FormattedBlock"]] = Field(
         default=None,
         description="Response parsed into formatted blocks for rich rendering"
     )
