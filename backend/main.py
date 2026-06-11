@@ -43,9 +43,36 @@ GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 # This tells the SDK which account to use for API requests
 genai.configure(api_key=GOOGLE_API_KEY)
 
-# Initialize the Gemini model we'll use for chat
-# "gemini-pro" is Google's general-purpose model for text generation
-model = genai.GenerativeModel("gemini-pro")
+# Get the list of available models to find one that supports generateContent
+# Different API keys may have access to different models
+try:
+    # List all available models
+    available_models = genai.list_models()
+
+    # Find the first model that supports generateContent
+    model_name = None
+    for available_model in available_models:
+        # Check if this model supports generateContent method
+        if "generateContent" in available_model.supported_generation_methods:
+            model_name = available_model.name
+            break
+
+    # If we found a supported model, use it
+    # Otherwise, use a default fallback
+    if model_name:
+        # Remove "models/" prefix if present (genai returns "models/model-name")
+        if model_name.startswith("models/"):
+            model_name = model_name.replace("models/", "")
+        model = genai.GenerativeModel(model_name)
+    else:
+        # Fallback to a known model if listing fails
+        model = genai.GenerativeModel("gemini-pro")
+
+except Exception as e:
+    # If we can't list models, try a fallback model
+    # This might happen if the API key doesn't have listModels permission
+    print(f"Warning: Could not list models ({str(e)}), using fallback model")
+    model = genai.GenerativeModel("gemini-pro")
 
 # Create a FastAPI application instance
 # This is the core of our web server
