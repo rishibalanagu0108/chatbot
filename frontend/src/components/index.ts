@@ -8,6 +8,7 @@
 export * from './ui'
 
 // Custom Components
+export { Header } from './Header'
 export { ChatMessage } from './ChatMessage'
 export { MessageInput } from './MessageInput'
 export { RoleSelector } from './RoleSelector'
