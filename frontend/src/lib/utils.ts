@@ -97,3 +97,41 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
     timeoutId = setTimeout(() => func(...args), delay)
   }
 }
+
+/**
+ * Detect if text contains markdown syntax
+ */
+export function isMarkdown(text: string): boolean {
+  return /[*_`[\]()#-]|```[\s\S]*?```|> |^\s*[-*+]\s|\|\s*-+\s*\|/m.test(text)
+}
+
+/**
+ * Get language name from code block language identifier
+ */
+export function getLanguageName(language: string): string {
+  const names: Record<string, string> = {
+    js: 'JavaScript',
+    ts: 'TypeScript',
+    py: 'Python',
+    java: 'Java',
+    cpp: 'C++',
+    cs: 'C#',
+    php: 'PHP',
+    rb: 'Ruby',
+    go: 'Go',
+    rs: 'Rust',
+    swift: 'Swift',
+    kt: 'Kotlin',
+    html: 'HTML',
+    css: 'CSS',
+    sql: 'SQL',
+    bash: 'Bash',
+    sh: 'Shell',
+    json: 'JSON',
+    yaml: 'YAML',
+    yml: 'YAML',
+    md: 'Markdown',
+    xml: 'XML',
+  }
+  return names[language?.toLowerCase() || 'plaintext'] || language || 'Code'
+}

@@ -6,6 +6,7 @@
 
 import { Message } from '@/types'
 import { Card, CardContent } from '@/components/ui'
+import { MarkdownRenderer } from './MarkdownRenderer'
 import { cn } from '@/lib/utils'
 
 interface ChatMessageProps {
@@ -16,6 +17,7 @@ interface ChatMessageProps {
 export function ChatMessage({ message, onRetry }: ChatMessageProps) {
   const isUser = message.sender === 'user'
   const isError = message.isError || message.status === 'error'
+  const hasFormattedBlocks = message.formattedBlocks && message.formattedBlocks.length > 0
 
   return (
     <div
@@ -27,7 +29,7 @@ export function ChatMessage({ message, onRetry }: ChatMessageProps) {
       {/* Avatar */}
       <div
         className={cn(
-          'flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold',
+          'flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold flex-shrink-0 mt-1',
           isUser
             ? 'bg-primary text-primary-foreground'
             : isError
@@ -41,7 +43,7 @@ export function ChatMessage({ message, onRetry }: ChatMessageProps) {
       {/* Message Content */}
       <Card
         className={cn(
-          'max-w-md rounded-lg p-3',
+          'max-w-2xl rounded-lg p-0',
           isUser
             ? 'bg-primary text-primary-foreground'
             : isError
@@ -49,19 +51,32 @@ export function ChatMessage({ message, onRetry }: ChatMessageProps) {
               : 'bg-muted'
         )}
       >
-        <CardContent className="p-0">
-          <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-            {message.text}
-          </p>
+        <CardContent className={cn('p-0', !isError && 'p-4')}>
+          {/* Rendered markdown or plain text */}
+          {hasFormattedBlocks && !isUser ? (
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <MarkdownRenderer blocks={message.formattedBlocks} />
+            </div>
+          ) : (
+            <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+              {message.text}
+            </p>
+          )}
 
           {/* Metadata */}
           {message.metadata && !isError && (
-            <div className="mt-2 text-xs opacity-60 space-y-1">
+            <div className={cn(
+              'mt-2 text-xs opacity-60 space-y-1 border-t border-border/30 pt-2',
+              isUser && 'text-primary-foreground/60'
+            )}>
               {message.metadata.role && (
                 <p>Role: {message.metadata.role}</p>
               )}
               {message.metadata.processing_time_ms && (
-                <p>Time: {message.metadata.processing_time_ms}ms</p>
+                <p>⏱️ {message.metadata.processing_time_ms}ms</p>
+              )}
+              {message.metadata.tokens_estimated && (
+                <p>📊 ~{message.metadata.tokens_estimated} tokens</p>
               )}
             </div>
           )}
@@ -70,7 +85,7 @@ export function ChatMessage({ message, onRetry }: ChatMessageProps) {
           {isError && onRetry && (
             <button
               onClick={onRetry}
-              className="mt-2 text-xs underline hover:opacity-70 transition-opacity"
+              className="mt-3 px-3 py-1 text-xs border border-destructive rounded hover:bg-destructive/20 transition-colors"
             >
               Retry
             </button>
