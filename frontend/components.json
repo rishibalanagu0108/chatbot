@@ -1,0 +1,15 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "default",
+  "rsc": false,
+  "tsx": true,
+  "aliases": {
+    "@/components": "./src/components",
+    "@/lib": "./src/lib",
+    "@/hooks": "./src/hooks",
+    "@/types": "./src/types",
+    "@/services": "./src/services",
+    "@/config": "./src/config",
+    "@/styles": "./src/styles"
+  }
+}
