@@ -80,9 +80,3 @@ export type {
   ChatStatistics,
 } from './State'
 export { calculateChatStatistics } from './State'
-
-// Notification types
-export type {
-  NotificationType,
-  NotificationContextType,
-} from './Notification'

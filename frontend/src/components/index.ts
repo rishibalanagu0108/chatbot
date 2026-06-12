@@ -20,6 +20,5 @@ export { MarkdownRenderer } from './MarkdownRenderer'
 export { CodeBlock } from './CodeBlock'
 
 // Feedback Components
-export { Toast } from './Toast'
-export { ToastContainer } from './ToastContainer'
+export { Toaster } from './ui/toaster'
 export { ErrorBoundary } from './ErrorBoundary'

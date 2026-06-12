@@ -112,8 +112,7 @@ export function useChat() {
           // Show success toast
           toast.success({
             title: 'Message sent',
-            message: `Response received in ${response.processing_time_ms}ms`,
-            duration: 3000,
+            description: `Response received in ${response.processing_time_ms}ms`,
           })
 
           return response
@@ -123,15 +122,10 @@ export function useChat() {
           setError(apiErrorData)
           addErrorMessage(apiErrorData)
 
-          // Show error toast
+          // Show error toast with retry option
           toast.error({
             title: 'Failed to send message',
-            message: apiErrorData.detail,
-            duration: 5000,
-            action: {
-              label: 'Retry',
-              onClick: () => sendMessage(payload),
-            },
+            description: apiErrorData.detail,
           })
 
           return null

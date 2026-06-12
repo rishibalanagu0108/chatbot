@@ -1,56 +1,88 @@
 /**
  * useToast Hook
  *
- * Custom hook for displaying toast notifications.
+ * Custom hook for displaying toast notifications (shadcn/ui based).
  */
 
-import { useContext } from 'react'
-import { ToastContext } from '@/context/ToastContext'
-import type { NotificationType } from '@/types'
+import { useState, useCallback, useMemo } from 'react'
+import { generateId } from '@/lib/utils'
+
+export interface Toast {
+  id: string
+  title?: string
+  description?: string
+  action?: React.ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  variant?: 'default' | 'destructive' | 'success'
+}
+
+export interface ToastActionElement {
+  altText: string
+  action: React.ReactNode
+}
 
 interface ToastOptions {
-  title: string
-  message?: string
-  duration?: number
-  action?: {
-    label: string
-    onClick: () => void
-  }
+  title?: string
+  description?: string
+  action?: React.ReactNode
+  variant?: 'default' | 'destructive' | 'success'
 }
 
 export function useToast() {
-  const context = useContext(ToastContext)
+  const [toasts, setToasts] = useState<Toast[]>([])
 
-  if (!context) {
-    throw new Error('useToast must be used within ToastProvider')
-  }
+  // Core toast function - stable across renders
+  const addToast = useCallback((props: ToastOptions) => {
+    const id = generateId()
 
-  const {
-    notifications,
-    addNotification,
-    removeNotification,
-    clearAll,
-  } = context
+    const newToast: Toast = {
+      id,
+      ...props,
+      open: true,
+      onOpenChange: (open: boolean) => {
+        if (!open) {
+          setToasts((prev) => prev.filter((t) => t.id !== id))
+        }
+      },
+    }
 
-  const showToast = (
-    type: NotificationType,
-    options: ToastOptions
-  ): string => {
-    return addNotification({
-      type,
-      ...options,
-    })
-  }
+    setToasts((prev) => [newToast, ...prev])
+
+    return {
+      id,
+      dismiss: () =>
+        setToasts((prev) => prev.filter((t) => t.id !== id)),
+    }
+  }, [])
+
+  // Memoize toast methods object to prevent recreating it on every render
+  const toast = useMemo(
+    () => ({
+      success: (options: ToastOptions) =>
+        addToast({ ...options, variant: 'success' }),
+      error: (options: ToastOptions) =>
+        addToast({ ...options, variant: 'destructive' }),
+      warning: (options: ToastOptions) =>
+        addToast({ ...options, variant: 'default' }),
+      default: (options: ToastOptions) =>
+        addToast({ ...options, variant: 'default' }),
+    }),
+    [addToast]
+  )
+
+  // Dismiss function - stable across renders
+  const dismiss = useCallback((toastId?: string) => {
+    if (toastId) {
+      setToasts((prev) => prev.filter((t) => t.id !== toastId))
+    } else {
+      setToasts([])
+    }
+  }, [])
 
   return {
-    notifications,
-    toast: {
-      success: (options: ToastOptions) => showToast('success', options),
-      error: (options: ToastOptions) => showToast('error', options),
-      warning: (options: ToastOptions) => showToast('warning', options),
-      info: (options: ToastOptions) => showToast('info', options),
-    },
-    removeNotification,
-    clearAll,
+    toasts,
+    toast,
+    dismiss,
   }
 }

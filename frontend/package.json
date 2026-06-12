@@ -19,10 +19,12 @@
     "@radix-ui/react-slot": "^2.0.2",
     "@radix-ui/react-scroll-area": "^1.0.5",
     "@radix-ui/react-slider": "^1.1.2",
+    "@radix-ui/react-toast": "^1.1.5",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "tailwind-merge": "^2.2.0",
-    "highlight.js": "^11.9.0"
+    "highlight.js": "^11.9.0",
+    "lucide-react": "^0.344.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",
