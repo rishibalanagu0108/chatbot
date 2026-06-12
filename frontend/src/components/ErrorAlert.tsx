@@ -4,8 +4,8 @@
  * Displays error messages with dismiss and retry options.
  */
 
-import { Card, CardContent } from '@/components/ui'
-import type { ApiError } from '@/types'
+import { Card, CardContent } from './ui/index'
+import type { ApiError } from '../types'
 
 interface ErrorAlertProps {
   error: ApiError | null

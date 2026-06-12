@@ -10,8 +10,8 @@
  * - Content-Type management
  */
 
-import type { ApiRequestOptions } from '@/types'
-import type { ApiError } from '@/types'
+import type { ApiRequestOptions } from '../../types'
+import type { ApiError } from '../../types'
 
 /**
  * Default API client configuration

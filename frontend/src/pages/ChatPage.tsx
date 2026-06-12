@@ -5,8 +5,8 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import type { ChatRequestPayload, LLMRole } from '@/types'
-import { useChat, useConfig, useTheme } from '@/hooks'
+import type { ChatRequestPayload, LLMRole } from '../types'
+import { useChat, useConfig, useTheme } from '../hooks'
 import {
   Header,
   ChatMessage,
@@ -23,7 +23,7 @@ import {
   Card,
   CardContent,
   Button,
-} from '@/components'
+} from '../components'
 
 export function ChatPage() {
   // Hooks

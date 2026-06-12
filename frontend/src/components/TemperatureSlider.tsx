@@ -4,8 +4,8 @@
  * Slider control for temperature setting.
  */
 
-import { Slider } from '@/components/ui'
-import { cn } from '@/lib/utils'
+import { Slider } from './ui/index'
+import { cn } from '../lib/utils'
 
 interface TemperatureSliderProps {
   value: number

@@ -5,8 +5,8 @@
  */
 
 import { useRef, useState } from 'react'
-import { Button, Textarea } from '@/components/ui'
-import { cn } from '@/lib/utils'
+import { Button, Textarea } from './ui/index'
+import { cn } from '../lib/utils'
 
 interface MessageInputProps {
   onSend: (message: string) => void

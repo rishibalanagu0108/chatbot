@@ -11,9 +11,9 @@ import type {
   ChatApiResponse,
   ApiError,
   Message,
-} from '@/types'
-import { chatService } from '@/services'
-import { generateId, getTimestamp } from '@/lib/utils'
+} from '../types'
+import { chatService } from '../services'
+import { generateId, getTimestamp } from '../lib/utils'
 import { useToast } from './useToast'
 
 /**

@@ -6,8 +6,8 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import type { ChatConfig, ApiError } from '@/types'
-import { chatService, storageService } from '@/services'
+import type { ChatConfig, ApiError } from '../types'
+import { chatService, storageService } from '../services'
 
 /**
  * useConfig Hook

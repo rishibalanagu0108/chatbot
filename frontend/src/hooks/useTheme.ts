@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import { storageService } from '@/services'
+import { storageService } from '../services'
 
 /**
  * useTheme Hook

@@ -5,9 +5,9 @@
  * Supports paragraphs, code blocks, headings, lists, quotes, and more.
  */
 
-import type { FormattedBlock } from '@/types'
+import type { FormattedBlock } from '../types'
 import { CodeBlock } from './CodeBlock'
-import { cn } from '@/lib/utils'
+import { cn } from '../lib/utils'
 
 interface MarkdownRendererProps {
   blocks: FormattedBlock[]

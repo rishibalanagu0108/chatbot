@@ -10,8 +10,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui'
-import type { LLMRole } from '@/types'
+} from './ui/index'
+import type { LLMRole } from '../types'
 
 interface RoleSelectorProps {
   value: LLMRole

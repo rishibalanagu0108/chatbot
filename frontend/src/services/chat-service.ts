@@ -13,9 +13,9 @@ import type {
   ChatApiResponse,
   ConfigApiResponse,
   HealthResponse,
-} from '@/types'
+} from '../../types'
 import { apiClient } from './api-client'
-import { API_ENDPOINTS } from '@/config/api'
+import { API_ENDPOINTS } from '../config/api'
 
 /**
  * Chat Service Class
@@ -29,6 +29,7 @@ export class ChatService {
    * Sends a user message to the LLM and gets a response
    */
   async sendMessage(payload: ChatRequestPayload): Promise<ChatApiResponse> {
+    console.log(API_ENDPOINTS.chat);
     return apiClient.post<ChatApiResponse>(API_ENDPOINTS.chat, payload)
   }
 

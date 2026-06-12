@@ -7,7 +7,7 @@
 import { useState } from 'react'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/atom-one-dark.css'
-import { Button } from '@/components/ui'
+import { Button } from './ui/index'
 
 interface CodeBlockProps {
   code: string

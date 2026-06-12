@@ -4,10 +4,10 @@
  * Panel for configuring chat settings (role, temperature, max tokens).
  */
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/index'
 import { RoleSelector } from './RoleSelector'
 import { TemperatureSlider } from './TemperatureSlider'
-import type { LLMRole } from '@/types'
+import type { LLMRole } from '../types'
 
 interface SettingsPanelProps {
   role: LLMRole

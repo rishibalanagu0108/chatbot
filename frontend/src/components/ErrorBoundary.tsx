@@ -5,7 +5,7 @@
  */
 
 import { Component, ReactNode } from 'react'
-import { Card, CardContent } from '@/components/ui'
+import { Card, CardContent } from './ui/index'
 
 interface ErrorBoundaryProps {
   children: ReactNode

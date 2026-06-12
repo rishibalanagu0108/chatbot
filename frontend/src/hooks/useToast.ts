@@ -5,7 +5,7 @@
  */
 
 import { useState, useCallback, useMemo } from 'react'
-import { generateId } from '@/lib/utils'
+import { generateId } from '../lib/utils'
 
 export interface Toast {
   id: string

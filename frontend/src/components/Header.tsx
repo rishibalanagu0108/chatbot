@@ -4,8 +4,8 @@
  * Application header with title, theme toggle, and settings button.
  */
 
-import { Button } from '@/components/ui'
-import { useTheme } from '@/hooks'
+import { Button } from './ui/index'
+import { useTheme } from '../hooks'
 
 interface HeaderProps {
   onSettingsClick?: () => void

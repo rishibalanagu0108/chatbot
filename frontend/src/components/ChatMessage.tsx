@@ -4,10 +4,10 @@
  * Displays individual chat messages with formatting.
  */
 
-import { Message } from '@/types'
-import { Card, CardContent } from '@/components/ui'
+import { Message } from '../types'
+import { Card, CardContent } from './ui/index'
 import { MarkdownRenderer } from './MarkdownRenderer'
-import { cn } from '@/lib/utils'
+import { cn } from '../lib/utils'
 
 interface ChatMessageProps {
   message: Message

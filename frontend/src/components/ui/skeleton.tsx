@@ -4,7 +4,7 @@
  * Skeleton loader component for displaying loading states.
  */
 
-import { cn } from "@/lib/utils"
+import { cn } from "../../lib/utils"
 
 function Skeleton({
   className,

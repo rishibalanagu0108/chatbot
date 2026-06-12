@@ -4,8 +4,8 @@
  * Shows loading state while waiting for API response.
  */
 
-import { Skeleton } from '@/components/ui'
-import { Card } from '@/components/ui'
+import { Skeleton } from './ui/index'
+import { Card } from './ui/index'
 
 interface LoadingIndicatorProps {
   message?: string

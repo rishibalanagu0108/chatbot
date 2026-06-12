@@ -1,14 +1,14 @@
 /**
  * Main App Component
  *
- * Root component that sets up the application structure
+ * Root component that sets up the application structure with professional UI
  */
 
 import { useEffect } from 'react'
-import { useTheme } from '@/hooks'
-import { ChatPage } from '@/pages'
-import { Toaster, ErrorBoundary } from '@/components'
-import '@/styles/globals.css'
+import { useTheme } from './hooks'
+import { ChatPage } from './pages'
+import { Toaster, ErrorBoundary } from './components'
+import './styles/globals.css'
 
 function AppContent() {
   const { theme } = useTheme()
