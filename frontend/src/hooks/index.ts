@@ -7,3 +7,4 @@
 export { useChat } from './useChat'
 export { useConfig } from './useConfig'
 export { useTheme } from './useTheme'
+export { useToast } from './useToast'

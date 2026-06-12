@@ -5,12 +5,14 @@
  */
 
 import { useEffect } from 'react'
-import { useTheme } from '@/hooks'
+import { useTheme, useToast } from '@/hooks'
 import { ChatPage } from '@/pages'
+import { ToastContainer, ErrorBoundary } from '@/components'
 import '@/styles/globals.css'
 
-export default function App() {
+function AppContent() {
   const { theme } = useTheme()
+  const { notifications, removeNotification } = useToast()
 
   // Apply theme to document on mount and when it changes
   useEffect(() => {
@@ -24,7 +26,17 @@ export default function App() {
 
   return (
     <div className={theme === 'dark' ? 'dark' : ''}>
-      <ChatPage />
+      <ErrorBoundary>
+        <ChatPage />
+        <ToastContainer
+          notifications={notifications}
+          onRemove={removeNotification}
+        />
+      </ErrorBoundary>
     </div>
   )
+}
+
+export default function App() {
+  return <AppContent />
 }

@@ -14,6 +14,7 @@ import type {
 } from '@/types'
 import { chatService } from '@/services'
 import { generateId, getTimestamp } from '@/lib/utils'
+import { useToast } from './useToast'
 
 /**
  * useChat Hook
@@ -24,6 +25,7 @@ export function useChat() {
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<ApiError | null>(null)
+  const { toast } = useToast()
 
   /**
    * Add a user message
@@ -100,16 +102,19 @@ export function useChat() {
         // Add user message
         addUserMessage(payload.message)
 
-        // Add loading message (optional, can be shown as typing indicator)
-        const loadingId = generateId()
-
         try {
           // Send to API
           const response = await chatService.sendMessage(payload)
 
-          // Remove loading message if it was added
           // Add AI response
           addAiMessage(response)
+
+          // Show success toast
+          toast.success({
+            title: 'Message sent',
+            message: `Response received in ${response.processing_time_ms}ms`,
+            duration: 3000,
+          })
 
           return response
         } catch (apiError) {
@@ -117,13 +122,25 @@ export function useChat() {
           const apiErrorData = apiError as ApiError
           setError(apiErrorData)
           addErrorMessage(apiErrorData)
+
+          // Show error toast
+          toast.error({
+            title: 'Failed to send message',
+            message: apiErrorData.detail,
+            duration: 5000,
+            action: {
+              label: 'Retry',
+              onClick: () => sendMessage(payload),
+            },
+          })
+
           return null
         }
       } finally {
         setIsLoading(false)
       }
     },
-    [addUserMessage, addAiMessage, addErrorMessage]
+    [addUserMessage, addAiMessage, addErrorMessage, toast]
   )
 
   /**

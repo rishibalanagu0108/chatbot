@@ -18,3 +18,8 @@ export { LoadingIndicator } from './LoadingIndicator'
 export { ErrorAlert } from './ErrorAlert'
 export { MarkdownRenderer } from './MarkdownRenderer'
 export { CodeBlock } from './CodeBlock'
+
+// Feedback Components
+export { Toast } from './Toast'
+export { ToastContainer } from './ToastContainer'
+export { ErrorBoundary } from './ErrorBoundary'
