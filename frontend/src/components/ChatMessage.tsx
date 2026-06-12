@@ -53,7 +53,7 @@ export function ChatMessage({ message, onRetry }: ChatMessageProps) {
       >
         <CardContent className={cn('p-0', !isError && 'p-4')}>
           {/* Rendered markdown or plain text */}
-          {hasFormattedBlocks && !isUser ? (
+          {hasFormattedBlocks && !isUser && message.formattedBlocks ? (
             <div className="prose prose-sm dark:prose-invert max-w-none">
               <MarkdownRenderer blocks={message.formattedBlocks} />
             </div>

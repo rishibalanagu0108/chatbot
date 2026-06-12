@@ -113,8 +113,7 @@ export class ChatService {
    * For server-sent events or WebSocket support
    */
   async streamMessage(
-    payload: ChatRequestPayload,
-    onChunk?: (chunk: string) => void
+    payload: ChatRequestPayload
   ): Promise<ChatApiResponse> {
     // TODO: Implement streaming when backend supports it
     return this.sendMessage(payload)

@@ -116,7 +116,6 @@ const ToastDescription = React.forwardRef<
 ToastDescription.displayName = "ToastDescription"
 
 export {
-  type ToastActionElement,
   ToastProvider,
   ToastViewport,
   Toast,

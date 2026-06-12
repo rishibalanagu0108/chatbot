@@ -4,7 +4,7 @@
  * Central place to manage API base URL and endpoints
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) || 'http://localhost:8000'
 
 export const API_ENDPOINTS = {
   // Chat endpoints

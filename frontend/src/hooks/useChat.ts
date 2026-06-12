@@ -5,7 +5,7 @@
  * Manages chat state, API calls, and message handling.
  */
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import type {
   ChatRequestPayload,
   ChatApiResponse,

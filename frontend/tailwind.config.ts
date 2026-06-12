@@ -1,5 +1,4 @@
 import type { Config } from 'tailwindcss'
-import defaultTheme from 'tailwindcss/defaultConfig'
 
 const config: Config = {
   darkMode: ['class'],
@@ -47,7 +46,7 @@ const config: Config = {
         sm: 'calc(var(--radius) - 4px)',
       },
       fontFamily: {
-        sans: ['Inter', ...defaultTheme.fontFamily.sans],
+        sans: ['system-ui', 'sans-serif'],
       },
     },
   },

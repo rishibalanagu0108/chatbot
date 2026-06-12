@@ -111,12 +111,13 @@ export interface LoadingSpinnerProps extends CommonComponentProps {
 /**
  * Error message component props
  */
-export interface ErrorMessageProps extends CommonComponentProps {
+export interface ErrorMessageProps {
   error: string | Error
   title?: string
   onDismiss?: () => void
   retry?: () => void | Promise<void>
   isRetrying?: boolean
+  className?: string
 }
 
 /**

@@ -4,7 +4,7 @@
  * Type definitions for application state
  */
 
-import type { Message, ResponseMetadata } from './Message'
+import type { Message } from './Message'
 import type { ChatConfig, UserSettings } from './ChatConfig'
 import type { ApiError } from './API'
 

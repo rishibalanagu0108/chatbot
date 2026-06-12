@@ -12,13 +12,11 @@ import { Button } from '@/components/ui'
 interface CodeBlockProps {
   code: string
   language?: string
-  showLineNumbers?: boolean
 }
 
 export function CodeBlock({
   code,
   language = 'plaintext',
-  showLineNumbers = true,
 }: CodeBlockProps) {
   const [copied, setCopied] = useState(false)
 
@@ -35,8 +33,8 @@ export function CodeBlock({
     } catch (error) {
       console.warn(`Failed to highlight ${language}:`, error)
     }
-    // Fallback to plain text
-    return hljs.utils.escapeHtml(code)
+    // Fallback to plain text - escape HTML
+    return code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   }
 
   const highlightedCode = highlightCode()

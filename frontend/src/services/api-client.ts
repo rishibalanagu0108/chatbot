@@ -10,7 +10,7 @@
  * - Content-Type management
  */
 
-import type { ApiRequestOptions, ApiResponseWrapper } from '@/types'
+import type { ApiRequestOptions } from '@/types'
 import type { ApiError } from '@/types'
 
 /**
@@ -108,8 +108,6 @@ export class ApiClient {
 
     const fullURL = this.buildURL(url)
     const attempt = async (retryCount: number): Promise<T> => {
-      const startTime = Date.now()
-
       try {
         const response = await this.fetchWithTimeout(fullURL, {
           method,
@@ -117,8 +115,6 @@ export class ApiClient {
           body: body ? JSON.stringify(body) : undefined,
           timeout,
         })
-
-        const duration = Date.now() - startTime
 
         // Parse response
         const contentType = response.headers.get('content-type')
@@ -257,7 +253,7 @@ export class ApiClient {
  * Global API client instance
  */
 export const apiClient = new ApiClient(
-  import.meta.env.VITE_API_URL || 'http://localhost:8000'
+  (import.meta.env.VITE_API_URL as string | undefined) || 'http://localhost:8000'
 )
 
 export default apiClient

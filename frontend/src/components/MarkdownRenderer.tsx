@@ -73,22 +73,25 @@ function CodeBlockWrapper({ block }: BlockRendererProps) {
 }
 
 function HeadingBlock({ block }: BlockRendererProps) {
-  const level = block.metadata?.level || 2
-  const HeadingTag = `h${level}` as keyof JSX.IntrinsicElements
+  const metadata = block.metadata as Record<string, unknown> | undefined
+  const levelValue = typeof metadata?.level === 'number' ? metadata.level : 2
+  const level = Math.min(6, Math.max(1, levelValue)) as 1 | 2 | 3 | 4 | 5 | 6
 
-  const headingClasses = {
-    h1: 'text-3xl font-bold mb-4 mt-6 text-foreground',
-    h2: 'text-2xl font-bold mb-3 mt-5 text-foreground',
-    h3: 'text-xl font-bold mb-3 mt-4 text-foreground',
-    h4: 'text-lg font-bold mb-2 mt-3 text-foreground',
-    h5: 'text-base font-bold mb-2 mt-2 text-foreground',
-    h6: 'text-sm font-bold mb-2 mt-2 text-foreground',
+  const headingClasses: Record<number, string> = {
+    1: 'text-3xl font-bold mb-4 mt-6 text-foreground',
+    2: 'text-2xl font-bold mb-3 mt-5 text-foreground',
+    3: 'text-xl font-bold mb-3 mt-4 text-foreground',
+    4: 'text-lg font-bold mb-2 mt-3 text-foreground',
+    5: 'text-base font-bold mb-2 mt-2 text-foreground',
+    6: 'text-sm font-bold mb-2 mt-2 text-foreground',
   }
 
+  const Component = `h${level}` as keyof JSX.IntrinsicElements
+
   return (
-    <HeadingTag className={headingClasses[`h${level}` as keyof typeof headingClasses]}>
+    <Component className={headingClasses[level]}>
       {renderInlineContent(block.content)}
-    </HeadingTag>
+    </Component>
   )
 }
 
@@ -135,8 +138,9 @@ function ItalicBlock({ block }: BlockRendererProps) {
 }
 
 function LinkBlock({ block }: BlockRendererProps) {
-  const href = block.metadata?.href || '#'
-  const title = block.metadata?.title
+  const metadata = block.metadata as Record<string, unknown> | undefined
+  const href = (typeof metadata?.href === 'string' ? metadata.href : '#') || '#'
+  const title = typeof metadata?.title === 'string' ? metadata.title : undefined
 
   return (
     <a
